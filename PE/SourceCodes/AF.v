@@ -1,4 +1,17 @@
-module activationFunction (clk, rst, hlt, ACC_AF_valid, ACC_AF_type, ACC_AF_seqNum, ACC_AF_data, AF_NI_packet, AF_NI_valid);
+//////////////////////////////////////////////////////////////////////////////////
+// Company: Nazarbayev University
+// Engineer: Arshyn Zhanbolatov
+// 
+// Create Date: 09.08.2018 
+// Design Name: AF
+// Module Name: activationFunction
+// Project Name: NeuroNoc
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+//////////////////////////////////////////////////////////////////////////////////
+
+module activationFunction(clk, rst, hlt, ACC_AF_valid, ACC_AF_type, ACC_AF_seqNum, ACC_AF_data, AF_NI_packet, AF_NI_valid);
 parameter SOURCE_ADDRESS=1, DEST_ADDRESS=0;
 `include "header.vh"
 

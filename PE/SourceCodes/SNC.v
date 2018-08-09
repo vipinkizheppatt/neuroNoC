@@ -1,3 +1,16 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Company: Nazarbayev University
+// Engineer: Arshyn Zhanbolatov
+// 
+// Create Date: 09.08.2018 
+// Design Name: SNC
+// Module Name: seqNumCheck
+// Project Name: NeuroNoc
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+//////////////////////////////////////////////////////////////////////////////////
+
 module seqNumCheck(clk, rst, hlt, NI_SNC_valid, NI_SNC_packet, SNC_MUL_valid, SNC_MUL_type, SNC_MUL_seqNum, SNC_MUL_sourceAddress, SNC_MUL_data);
 `include "header.vh"
 

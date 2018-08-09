@@ -1,3 +1,16 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Company: Nazarbayev University
+// Engineer: Arshyn Zhanbolatov
+// 
+// Create Date: 09.08.2018 
+// Design Name: ACC
+// Module Name: accumulator
+// Project Name: NeuroNoc
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+//////////////////////////////////////////////////////////////////////////////////
+
 module accumulator(clk, rst, hlt, MUL_ACC_valid, MUL_ACC_type,  MUL_ACC_seqNum, MUL_ACC_data, ACC_AF_valid, ACC_AF_type,ACC_AF_seqNum, ACC_AF_data);
 `include "header.vh"
 

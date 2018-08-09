@@ -1,3 +1,16 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Company: Nazarbayev University
+// Engineer: Arshyn Zhanbolatov
+// 
+// Create Date: 09.08.2018 
+// Design Name: PE
+// Module Name: processingElement
+// Project Name: NeuroNoc
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+//////////////////////////////////////////////////////////////////////////////////
+
 module processingElement(clk, rst, NI_PE_valid, NI_PE_packet, NI_PE_ready, PE_NI_ready, PE_NI_packet, PE_NI_valid);
 parameter SOURCE_ADDRESS=1;
 `include "header.vh"

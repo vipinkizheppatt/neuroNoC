@@ -1,3 +1,16 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Company: Nazarbayev University
+// Engineer: Arshyn Zhanbolatov
+// 
+// Create Date: 09.08.2018 
+// Design Name: MUL
+// Module Name: multiplier
+// Project Name: NeuroNoc
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+//////////////////////////////////////////////////////////////////////////////////
+
 module multiplier( clk,rst,hlt,SNC_MUL_valid,SNC_MUL_type,SNC_MUL_seqNum,SNC_MUL_sourceAddress,  SNC_MUL_data,MUL_ACC_valid,  MUL_ACC_type, MUL_ACC_seqNum, MUL_ACC_data);
 `include "header.vh"
 
