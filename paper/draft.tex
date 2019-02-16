@@ -1,36 +1,20 @@
-% This is samplepaper.tex, a sample chapter demonstrating the
-% LLNCS macro package for Springer Computer Science proceedings;
-% Version 2.20 of 2017/10/04
+\documentclass[10pt,conference,a4paper]{IEEEtran}
 %
-\documentclass[runningheads]{llncs}
-%
+\setlength{\marginparwidth}{2cm}
 \usepackage{graphicx}
-% Used for displaying a sample figure. If possible, figure files should
-% be included in EPS format.
-%
-% If you use the hyperref package, please uncomment the following line
-% to display URLs in blue roman font according to Springer's eBook style:
-% \renewcommand\UrlFont{\color{blue}\rmfamily}
+\usepackage{todonotes}
+\usepackage{subfigure}
+\usepackage{pgfplots}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{booktabs, colortbl, tabularx}
+\pgfplotsset{compat=1.6}
+
 
 \begin{document}
 %
-\title{NeuroNoC: A Rapid Reconfigurable Neural Network Prototyping Platform}
-%
-%\titlerunning{Abbreviated paper title}
-% If the paper title is too long for the running head, you can set
-% an abbreviated paper title here
-%
-\author{Arshyn Zhanbolatov \and
-Adilet Baisyn  \and
-Kizheppatt Vipin}
-%
-\authorrunning{A. Zhanbolatov et al.}
-% First names are abbreviated in the running head.
-% If there are more than two authors, 'et al.' is used.
-%
-\institute{School of Engineering, Nazarbayev University, Astana, Kazakhstan 010000
-\email{arshyn.zhanbolatov@nu.edu.kz}}
-%
+\title{NeuroNoC: An Open Reconfigurable Neural Network Prototyping Platform}
+
 \maketitle              % typeset the header of the contribution
 %
 %\begin{abstract}
@@ -42,14 +26,18 @@ Kizheppatt Vipin}
 %
 %
 %
-
+\input{Sections/0Abstract}
+\input{Sections/1Introduction}
+\input{Sections/2RelatedWorks}
 \input{Sections/3Architecture}
+\input{Sections/4Results}
+\input{Sections/5Conclusion}
 
 
 
 
 
 
-\bibliographystyle{splncs04}
-\bibliography{arc} 
+%\bibliographystyle{IEEEtran}
+%\bibliography{arc} 
 \end{document}
