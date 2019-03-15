@@ -1,8 +1,7 @@
 \begin{abstract}
-\label{sec:abstraction}
-
+The utilization of FPGA in implementation of Neural Networks (NN) presents better performance in contrast to other hardware realizations and software-based implementations of NN. For real-time applications, FPGAs are well suited and more efficient in terms of time and cost. Large number of neurons in NN has been always a challenge in hardware realization in terms of resource utilization. Additionally, on-chip learning of NN leads to consumption of more resources of FPGA as the learning is performed by many multiplication processes and it requires higher precision. In this work, we present the design and implementation of FPGA-based NN, called NeuroNoc, which utilizes off-chip learning. The proposed NeuroNoC allows the user the novel technique to adjust the number of neurons, interconnections, weighs and biases of each neuron by introducing the configuration packet format of NN that differs from the input signal packet format. The packets, which alters the NN parameters, are sent from the same node as the input signals to NN. The implementation is supported by both on-premise FPGAs as well as cloud-based instances. The NeuroNoC platform is available as an open-source, allowing other researchers and small research centers to transfer the software-based NN to hardware.
 \end{abstract}
 
-
 \begin{IEEEkeywords}
+FPGA, Artificial Neural Network, Reconfigurability, Configuration Packet
 \end{IEEEkeywords}
