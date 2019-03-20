@@ -1,46 +1,50 @@
 \section{Proposed Architecture}
 
 \begin{figure}
+	\begin{center}
     \includegraphics[width=\columnwidth]{Figures/overall3.pdf}
     \caption{NeuroNoC architecture} 
+    \end{center}
     \label{figure:neuronoc}
 \end{figure}
 
 The overall architecture of NeuroNoC is depicted in Fig.~\ref{figure:neuronoc}.
 The NoC is arranged in mech topology with each PE representing a neuron, except the one at the bottom-left corner.
-Mesh topology was selected based on its relatively higher bisection bandwidth as well as its suitability for implementing multicast systems. 
+Mesh topology was selected based on its relatively higher bisection bandwidth as well as its suitability in implementing multicast systems. 
 The size of the NoC is configurable and can be set by users based on the type of the application and the resource capacity of the target FPGA.
 The bottom-left PE (with zero X and Y coordinates) is used to inject data to the network from external world.
 In other words this PE represents the entire input layer of the NN.
-The output layer of the NN sends back the output to this PE for sending it back to the host machine.
+The output layer of the NN sends back the network output to this PE for sending it back to the host machine.
 Due to the packet-switched nature of NoC architecture, the packets may reach the output PE in out-of-order.
-Packets are reordered and sent back to the host computer based on the sequence number.
+Packets are reordered and sent back to the host computer based on the sequence number embedded in the data packets.
 
 \subsection{Packet Formats}
 \label{subsecpktformat}
-NeuroNoC implements a variety of packet formats for supporting network and PE configurations as well as for inter-neuron communication.  
+NeuroNoC implements a variety of packet formats for supporting network and neuron configurations as well as for inter-neuron communication.  
 Fig.~\ref{figure:pktformat} depicts the different packet types and their corresponding fields.
-For a given NeuroNoC implementation all packets types have same size but depending on the size of the NoC the size of the packets varies.
+For a given NeuroNoC implementation, all packet types have same size but depending on the size of the NoC, packet size varies.
 This is mainly due to the variation in the size of the address fields which are NoC size dependent. 
 \begin{figure}[t!]
+	\begin{center}
     \includegraphics[width=0.8\columnwidth]{Figures/pktformat.pdf}
     \caption{NeuroNoC packet formats for supporting neuron and network configurations and data communication} 
     \label{figure:pktformat}
+    \end{center}
 \end{figure}
 
 \subsubsection*{\bf Data Packet}
 Data packets are used for inter-neuron communication.
 Once a neuron receives data packets from all its predecessors, it calculates the output based on inputs, weight values, bias and the activation function.
-It sends out another data packet with the output in the \emph{input} field and the neuron address in the \emph{source} field.
-The index field has significance only when the packet source is zero (bottom-left) PE.
-Since the entire input layer is modelled by this single PE, the index number differentiates the different neurons of this layer.
+It sends out another data packet with the calculated output in the \emph{Data} field and the neuron address in the \emph{source} field.
+The index field has significance only when the packet source is zero (bottom-left PE).
+Since the entire input layer is modeled by this single PE, the index number differentiates the different neurons of this layer.
 \subsubsection*{\bf Input number and Bias Configuration Packet}
-This configuration packet is used for configuring two parameters of each neuron.
-The \emph{Input Number} field configures the number of predecessors of the neuron from the previous layer.
+This configuration packet is used for setting two parameters of each neuron.
+The \emph{Input Number} field configures the number of predecessors from the previous layer.
 The \emph{Bias} field sets the neuron bias for calculating its output.
 The \emph{Destination} field is used by the NoC to route the packet to appropriate neurons. 
 \subsubsection*{\bf Weight Configuration Packet}
-The Weight Configuration Packet sets the weight value for each neuron by storing the \emph{Weight} field in its internal Weight Table.
+The Weight Configuration Packet sets the input weights for each neuron by storing the \emph{Weight} field in its internal Weight Table.
 The \emph{Source} field enables mapping a a particular weight with a particular input.
 Infact the Source field is used as the write address when storing weight in the weight table.
 \subsubsection*{\bf Routing Table Configuration Packet}
@@ -48,16 +52,16 @@ These packets are used for configuring the NoC switch routing tables, enabling m
 
 \subsection{Artificial Neuron}
 Individual neurons of the NN are implementing by the processing elements (PEs) of the NoC.
-Each neuron receives input from neurons in the previous layer, multiplies each input with corresponding weight, sums up and generates the output based on an activation function.
+Each neuron receives inputs from neurons in the previous layer, multiplies them with corresponding weights, sums up and generates the output based on an activation function.
 During configuration stage, each neuron is configured with the number of input neurons, weights corresponding each input and bias.
 Fig.~\ref{fig:neuron} shows the different submodules of an artificial neuron and are described in the subsequest sections.
-\subsubsection{\bf Sequence Number (SNC)}
+\subsubsection{\bf Sequence Number Checker(SNC)}
  
-Since packet switched NoC does not preserve packet ordering, neurons support out-of-order packet delivery by storing and reassembling the incoming data packets. 
+Since packet switched NoC does not preserve packet delivery ordering, neurons support out-of-order packet delivery by storing and reassembling the incoming data packets. 
 The input layer (bottom-left PE) assigns each data packet a sequence number in the \emph{sequence number} field. 
 It is to be noted that the number assigned corresponds to an input number rather than to a single packet.
-In other words an input with \emph{n-feature vector space} will be sent as n packets with same sequence number. 
-After processing the input data, the output packet from neurons retains sequence number of the input packets. 
+In other words, an input with \emph{n-feature vector space} will be sent as n packets with the same sequence number. 
+After processing the input data, the output packet from a neuron retains the same sequence number as that of the input packets. 
 
 \begin{figure}
     \centering
@@ -80,16 +84,14 @@ hf(seqNum,count[seqNum]) = concat(seqNum,count[seqNum])
 Where \emph{count[seqNum]} is the number of packets with the same sequence number already received by the neuron.
 The sequence number count is traked by the counter array (CR), which has a dedicated counter for each sequence number. 
 After a packet is stored in the HT, the corresponding sequence number counter is incremented, so that the next packets with the same sequence number is stored in the next memory location. 
-The SNC State Machine (SSM) tracks current sequence number and counter to retrieve packets from the HT. 
+The SNC State Machine (SSM) keeps track of the current sequence number and the corresponding counter to retrieve packets from the HT once the neuron receives packets from all its neighbors. 
 
-\subsection{Multipy-Accumulate Unit (MAC)}
-The computation of the total synaptic input to the neuron constitutes the principal arithmetic operation to be implemented in a hardware design of a neural network. 
-This is done by successive multiplication and addition operators i.e. a series of Multiply-Accumulate (MAC) operations. 
-The reassembled packets from SNC are ushered towards Multiplication (MUL) stage. 
-The weights are associated with the individual input packets through their source address, and these weights are stored in a Weight Table (WT) memory block which is shown in figure~\ref {figure:mac}. 
-The weights can be configured on the run by sending corresponding control packets. 
-The resultant product is accumulated at the Accumulation (ACC) stage. 
-Assuming same format for neuron input and output data, the number of bits to represent weighted sum is
+\subsubsection{\bf Multipy-Accumulate Unit (MAC)}
+The computation of the total synaptic input to the neuron is implemented by successive multiplication and addition operations (MAC operations).
+Once the SNC module detects that the neuron has received input packets from all its neighbors, it sends a control signal to the MAC module.
+The MAC module then reads the input one-by-one from the hash table~(HT) and multiplies and accumulates using the corresponding weight values read from the weight table~(WT). 
+Weights are stored in WT through the configuration packet described in Section~\ref{subsecpktformat}. 
+Assuming the same format for neuron input and output data, the number of bits to represent weighted sum is
 
 \begin{equation}
 N_{s}=\lceil\log_{2}(S_{NOC}\cdot (2^{n_{w}-1})(2^{n_{z}-1})+2^{n_{b}-1}\cdot 2^{f_{z}+f_{w}+f_{b}})\rceil+1
@@ -98,10 +100,10 @@ N_{s}=\lceil\log_{2}(S_{NOC}\cdot (2^{n_{w}-1})(2^{n_{z}-1})+2^{n_{b}-1}\cdot 2^
 
 The number of inputs and bias are configured with the same control packets which were used during SNC.  
 
-\subsection{Activation Function (AF)}
-The ANN implementation supports variety of activation functions with the help of look-up-tables~(LUTs).
+\subsubsection{\bf Activation Function (AF)}
+The ANN implementation supports a variety of activation functions with the help of look-up-tables~(LUTs).
 By changing the contents of the LUT, the activation function can be modified.
-LUT-based implementation of a complex and non-linear activation function, such as sigmoid function, may require large memory depending on the desirable precision.  
+LUT-based implementation of a complex and non-linear activation function, such as sigmoid function, may require a large memory depending on the desired precision.  
 If we define $n_{s}$ as the most significant bits of $N_{s}$, increasing the value of $n_{s}$ contributes to the accuracy of the LUT at the expense of memory size. 
 The minimum value at which all the possible output values are present in the LUT is given by
 
