@@ -1,13 +1,5 @@
 \section{Proposed Architecture}
 
-\begin{figure}
-	\begin{center}
-    \includegraphics[width=\columnwidth]{Figures/overall3.pdf}
-    \caption{NeuroNoC architecture} 
-    \end{center}
-    \label{figure:neuronoc}
-\end{figure}
-
 The overall architecture of NeuroNoC is depicted in Fig.~\ref{figure:neuronoc}.
 The NoC is arranged in mech topology with each PE representing a neuron, except the one at the bottom-left corner.
 Mesh topology was selected based on its relatively higher bisection bandwidth as well as its suitability in implementing multicast systems. 
@@ -48,7 +40,7 @@ The Weight Configuration Packet sets the input weights for each neuron by storin
 The \emph{Source} field enables mapping a a particular weight with a particular input.
 Infact the Source field is used as the write address when storing weight in the weight table.
 \subsubsection*{\bf Routing Table Configuration Packet}
-These packets are used for configuring the NoC switch routing tables, enabling multicast routing algorithm described in subsection~\ref{}.
+These packets are used for configuring the NoC switch routing tables, enabling multicast routing algorithm described in subsection~\ref{subsec_routing}.
 
 \subsection{Artificial Neuron}
 Individual neurons of the NN are implementing by the processing elements (PEs) of the NoC.
@@ -65,7 +57,7 @@ After processing the input data, the output packet from a neuron retains the sam
 
 \begin{figure}
     \centering
-    \includegraphics[width =0.8\columnwidth]{Figures/overall2.pdf}
+    \includegraphics[width =0.8\columnwidth]{Figures/NeuroNoC.pdf}
     \caption{Architecture of the proposed artificial neuron}
     \label{fig:neuron}
 \end{figure}
@@ -104,7 +96,7 @@ The number of inputs and bias are configured with the same control packets which
 The ANN implementation supports a variety of activation functions with the help of look-up-tables~(LUTs).
 By changing the contents of the LUT, the activation function can be modified.
 LUT-based implementation of a complex and non-linear activation function, such as sigmoid function, may require a large memory depending on the desired precision.  
-If we define $n_{s}$ as the most significant bits of $N_{s}$, increasing the value of $n_{s}$ contributes to the accuracy of the LUT at the expense of memory size. 
+If we define $n_{s}$ as the most significant bits of $N_{s}$, increasing the value of $n_{s}$ improves the accuracy at the expense of memory size. 
 The minimum value at which all the possible output values are present in the LUT is given by
 
 \begin{equation}
@@ -112,8 +104,8 @@ n_{s}=i_{s}-\lceil\log_{2}(\frac{d_{z}(1)}{{f}'(0)})\rceil
 \label{equation:ns}
 \end{equation}
 
-Furthermore, if we consider sigmoid function, most of the entries located too far away from 0 are replicated. 
-With this in mind, it is possible to reduce the size of LUT to store the central interval $[x_{high}, x_{low}]$, in where expressions for $x_{min}$ $x_{max}$ are given by
+Moreover, if we consider sigmoid function, most of the entries located far from 0 are duplicated. 
+Considering this, it is possible to reduce the size of LUT to store the values in the interval $[x_{high}, x_{low}]$, in where the expressions for $x_{min}$ $x_{max}$ are given by
 
 \begin{equation}
 x_{high}=d_{s}(\ln{2^{f_{z}-1}}), x_{low}=-x_{high}
@@ -122,18 +114,25 @@ x_{high}=d_{s}(\ln{2^{f_{z}-1}}), x_{low}=-x_{high}
 
 and the number of bits to address the LUT is 
 $n_{LUT}=\lceil\log_{2}{(x_{high}-x_{low}+1)}\rceil$.
-If the computed weighted sum falls within the central interval, then the output is taken from the LUT otherwise the output is assigned either 1 or 0. 
+If the computed weighted sum falls within this interval, the output is taken from the LUT otherwise the output is assigned 1 or 0 based on whether the value is above $x_{high}$ or below $x_{low}$. 
 
 \subsection{Switch}
-The inner architecture of one switch is depicted in figure ~\ref{figure:switch_architecture}. Each switch able to send and accept packets from five direction: North, South, East, West and PE. In other words, switch can communicate with upper, lower, right, left neighboring switches and with own PE. Each direction has two FIFO for receiving and transmitting the data. The FIFO was implemented by using IP FIFO generator, therefore, the depth of them can be customized. Switches serve the FIFOs in a queue in a clockwise direction.  Flow control is implemented through AXI-stream control signal as shown if figure.  The $o\_valid$ wires are asserted whenever switch transmits the data for certain direction including PE. Similarly, whenever the data comes from other switches or PE the $i\_valid$ wire of incoming side of the switch is asserted. The switch asserts the $o\_ready$ signal whenever the FIFO has empty slot to accept the data. All FIFOs should hold the data on the bus until data is transmitted to all necessary FIFO. Each switch has registers for routing table, size of total size of NoC rows with 5 bits length. Switch has finite state machine controller, which routes the packet for certain directions depending on the packet type and refreshes the routing table. In one process time one packet can be transmitted to several FIFOs. Switches communicate with each other through FIFOs.  
+The detailed architecture of the NeuroNoC switch is depicted in Fig.~\ref{fig_switch}. 
+Each switch is capable of sending and receiving packets from five direction; North, South, East, West and the associated neuron. 
+Separate FIFOs are present for receiving and transmitting packets from each direction.
+The interfaces follow AXI4-Stream interface for inter-swich as well as neuron-switch communication.
+Switches serve the FIFOs in a queue in a clockwise direction.  Flow control is implemented through AXI-stream control signal as shown if figure.  The $o\_valid$ wires are asserted whenever switch transmits the data for certain direction including PE. Similarly, whenever the data comes from other switches or PE the $i\_valid$ wire of incoming side of the switch is asserted. The switch asserts the $o\_ready$ signal whenever the FIFO has empty slot to accept the data. All FIFOs should hold the data on the bus until data is transmitted to all necessary FIFO. Each switch has registers for routing table, size of total size of NoC rows with 5 bits length. Switch has finite state machine controller, which routes the packet for certain directions depending on the packet type and refreshes the routing table. In one process time one packet can be transmitted to several FIFOs. Switches communicate with each other through FIFOs.  
 
 \begin{figure}
-    \includegraphics[width=\columnwidth]{Figures/switch2.pdf}
+    \begin{center}
+    \includegraphics[width=0.95\columnwidth]{Figures/switch2.pdf}
     \caption{Switch Architecture} 
-    \label{figure:switch_architecture}
+    \end{center}
+    \label{fig_switch}
 \end{figure}
 
-\subsection{Routing Packets}
+\subsection{Packet Routing}
+\label{subsec_routing}
  Switch receives the packet from one FIFO and routes the data for required FIFOs. Finite state machine controller has three main approaches for routing the packets depending on the type of incoming packet.
  For weight and bias configuration packet switch sends the packet using the number of switch in the NoC. Depending on the number of destination switch, the present switch can route the packet for four directions. If the destination switch is located to the above, below, to the left or the right, it sends to North,South, East, West FIFOs respectively. Once the packet came to the predefined switch, instantly it will be sent to the PE FIFO corresponding to that switch for configuring the weight and bias.   
 For routing table configuration packets switches behave the same as for weight and bias configuration oriented switches. The one difference is, when the packet came to the destination switch, it will refresh one slot of routing table and switch will serve next FIFO. 
