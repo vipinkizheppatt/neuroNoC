@@ -1,7 +1,5 @@
 \section{Background and Related Works}
 
-
-
 \begin{figure}[t!]
     \centering
     \subfigure[Layered Architecture of Neural Network]
@@ -21,24 +19,26 @@
 ~\cite{Furber2013}
 Artificial Neural Networks~(ANNs) are inspired and adapted models of biological mammalian brain~\cite{}.
 An ANN follows a layered architecture, where each layer is constructed form several neurons as shown in Fig.~\ref{fig:neuralNetwork}. 
-In biological neurons, the signal transition takes place between neurons through a structure called \emph{synapse}. 
-Each synapse has its own weight, which affects the signal passing though it: the signal is multiplied by the weight of the corresponding synapse. The inputs to the neuron from the synapses are summed up in the neuron and passed further to the activation function. Activation function transforms the input signals to output signals, and its main function is to make decision regarding how the output should behave to certain inputs. Fig. depicts the neuron with the basic operations it performs. 
+In biological nervous system, signal transmission takes place between neurons through a structure called \emph{synapse} via electrical and chemical mechanisms. 
+Synapse plays a vital role in determining the strength of connection between neurons.
+Artificial neural networks emulate this behavior with the help of \emph{weights}.
+Each connection~(synapse) between artificial neurons has a weight, which affects the signal passing though it by multiplying it with the weight. 
+The weighted inputs are summed up in the neuron and passed to an activation function. 
+Activation function transforms the input signals to output signals, and its main function is to make decision regarding how the output should behave to certain inputs. Fig.~\ref{fig:ann} depicts the neuron with the basic operations it performs. 
 
-ANN can consist of many layers, which are classified into three groups: input layer, hidden layer and output layer. One layer can be fully or partially connected to the next layer. Hidden layer can be built from many intermediate layers between input an output. 
+ANNs are consisted of many layers, which are classified into three groups: input layer, hidden layer and output layer. 
+One layer can be fully or partially connected to the next layer. 
+Hidden layer can be built from many intermediate layers between input an output.
+Each input to the network is represented as a \emph{feature vector}.
+For example in a handwriting recognition system using grayscale image, each input represents the brightness level of individual pixel in the picture.
+Each neuron in the input layer represents one feature and there are no weights associated with input layer.
 
-\subsection*{Number Representation}
+Traditional neural networks are \emph{feed forward} in nature where information moves in only in the forward direction.
+More advanced architectures such as recurrent neural networks will have cyclic connections.
+The networks are initially \emph{trained} to determine the values of different weights using training input samples.
+Subsequently they are used with testing data for applications such as classification, pattern recognition and forecasting.
 
-One critical factor in hardware implementation of ANN is the number representation of different data - synapse weights, biases and inputs/outputs of the neurons. Despite its widely usage in software ANNs, floating point arithmetic due to its prohibitively expensive cost is not well suited for hardware ANNs. As a result, the two's complement fixed binary point representation was chosen for data representation as it brings considerable optimization in terms of area usage and speed performance. However, this implies limited precision which is enough for many applications. Nevertheless, with this scheme learning process is accomplished off-chip in software using floating point representation. The conversions from decimal fractions to fixed point binary is done through equation~\ref{equation:dtob}.
-
-\begin{equation}
-b_{x}(d_{x})= \lfloor{d_{x}\cdot \frac{2^{n_{x}-1}-1}{2^{i_{x}-1}-2^{-f_{x}}}}\rceil
-\label{equation:dtob}
-\end{equation}
-\begin{equation}
-d_{x}(b_{x})= {b_{x}\cdot \frac{2^{i_{x}-1}-2^{-f_{x}}}{2^{n_{x}-1}-1}}
-\label{equation:btod}
-\end{equation}
-Here, $n_{x}$, ${x}$, $f_{x}$ amount to total number of bits, integer bits and fractional bits of the given variable.
+\subsection{Previous Works}
 
 The hardware options utilized for machine learning are Central Processing Units (CPU), Graphic
 Processing Units (GPU), FPGA and Application-Specific Integrated Circuit (ASIC). 
@@ -63,3 +63,18 @@ efficiency due to spiking-neuron technology, and high scalability as several chi
 dimensions, as well as flexibility by offering independent configurability of individual neurons and
 synapses (noc2). TrueNorth is fabricated using CMOS technology and uses offline learning in NN
 purposes (noc2).
+   
+
+\subsection{Number Representation}
+
+One critical factor in hardware implementation of ANN is the number representation of different data - synapse weights, biases and inputs/outputs of the neurons. Despite its widely usage in software ANNs, floating point arithmetic due to its prohibitively expensive cost is not well suited for hardware ANNs. As a result, the two's complement fixed binary point representation was chosen for data representation as it brings considerable optimization in terms of area usage and speed performance. However, this implies limited precision which is enough for many applications. Nevertheless, with this scheme learning process is accomplished off-chip in software using floating point representation. The conversions from decimal fractions to fixed point binary is done through equation~\ref{equation:dtob}.
+
+\begin{equation}
+b_{x}(d_{x})= \lfloor{d_{x}\cdot \frac{2^{n_{x}-1}-1}{2^{i_{x}-1}-2^{-f_{x}}}}\rceil
+\label{equation:dtob}
+\end{equation}
+\begin{equation}
+d_{x}(b_{x})= {b_{x}\cdot \frac{2^{i_{x}-1}-2^{-f_{x}}}{2^{n_{x}-1}-1}}
+\label{equation:btod}
+\end{equation}
+Here, $n_{x}$, ${x}$, $f_{x}$ amount to total number of bits, integer bits and fractional bits of the given variable.
