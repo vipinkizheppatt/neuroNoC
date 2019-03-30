@@ -58,8 +58,10 @@ output o_pe_valid;
 input i_pe_ready;
 output [PACKET_SIZE-1:0] o_pe_data;
 
+
 reg [2:0] currFifo;
 reg [2:0] prevFifo;
+reg [2:0] destFifo;
 
 wire [4:0] mFifoValid;
 reg  [4:0] mFifoReady;
@@ -83,7 +85,8 @@ localparam 	IDLE = 3'b0000,
 			CheckPE   = 4'b0111,
 			RegularSwitch 	= 4'b1000,
 			ForwardingTableSwitch = 4'b1001,
-			WaitOne=    4'b1010;
+			SendPacket=    4'b1010,
+			CheckQueue = 4'b1011;
 /*integer i = 0;
 initial
 begin
@@ -103,9 +106,7 @@ begin
     begin
         currState <= IDLE;
         currFifo <= 3'b000;
-        mFifoReady <= 5'h0;
-        
-                
+        mFifoReady <= 5'h0;  
     end
     else
     begin
@@ -113,6 +114,10 @@ begin
             IDLE:begin
                 mFifoReady <= 0;
                 sFifoValid <= 0;
+				prevFifo <= currFifo;
+				currState <= CheckQueue;
+			end	
+			CheckQueue:begin
 				case(currFifo)
 				    0:begin
 				        if(mFifoValid[1] == 1)
@@ -147,6 +152,7 @@ begin
 						end
 						else if(mFifoValid[4] == 1)
 						begin
+							
 							if(mFifoData[4][TYPE_START+TYPE_WIDTH-1:TYPE_START] == CONF_FT)
 								currState <= ForwardingTableSwitch;
 							else if(mFifoData[4][TYPE_START+TYPE_WIDTH-1:TYPE_START] == DATA)
@@ -366,9 +372,8 @@ begin
 						end
 						else if(mFifoValid[4] == 1)
 						begin
-							if(mFifoData[4][TYPE_START+TYPE_WIDTH-1:TYPE_START] == CONF_FT) begin
-								currState <= ForwardingTableSwitch; 
-							end
+							if(mFifoData[4][TYPE_START+TYPE_WIDTH-1:TYPE_START] == CONF_FT) 
+								currState <= ForwardingTableSwitch;
 							else if(mFifoData[4][TYPE_START+TYPE_WIDTH-1:TYPE_START] == DATA)
 								currState <= CheckFifo;
 							else 
@@ -379,18 +384,60 @@ begin
 				    default:
 				        currState <= IDLE;
 				endcase
-			end	
-			WaitOne:begin
-			    currState <= IDLE;
-			    mFifoReady <= 0;
-			    sFifoValid <= 0;
+			end
+			SendPacket:begin
+				if(prevState == ForwardingTableSwitch) 
+				begin
+					currState <= IDLE;
+					sFifoData[destFifo] <= mFifoData[currFifo];
+					mFifoReady[currFifo] <= 1'b1;
+					sFifoValid[destFifo] <= 1'b1;
+				end
+				else if(prevState == RegularSwitch)
+				begin
+					currState <= IDLE;
+					sFifoData[destFifo] <= mFifoData[currFifo];
+					mFifoReady[currFifo] <= 1'b1;
+					sFifoValid[destFifo] <= 1'b1;
+				end 
+				else
+				begin
+					if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][0] == 1'b1)
+					begin
+						sFifoData[0] <= mFifoData[currFifo];
+						sFifoValid[0] <= 1'b1;
+					end
+					if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][1] == 1'b1)
+					begin
+						sFifoData[1] <= mFifoData[currFifo];
+						sFifoValid[1] <= 1'b1;
+					end
+					if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][2] == 1'b1)
+					begin
+						sFifoData[2] <= mFifoData[currFifo];
+						sFifoValid[2] <= 1'b1;
+					end
+					if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][3] == 1'b1)
+					begin
+						sFifoData[3] <= mFifoData[currFifo];
+						sFifoValid[3] <= 1'b1;
+					end
+					if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][4] == 1'b1)
+					begin
+						sFifoData[4] <= mFifoData[currFifo];	
+						sFifoValid[4] <= 1'b1;
+					end
+					mFifoReady[currFifo] <= 1'b1;
+					currState <= IDLE;
+				end
 			end
 			ForwardingTableSwitch:begin
+				
 				if(mFifoData[currFifo][SWITCHNUMBER_START+SWITCHNUMBER_WIDTH-1:SWITCHNUMBER_START] == this_x*Y_SIZE + this_y)
 				begin
 					RT[mFifoData[currFifo][ENTRYNUMBER_START+ENTRYNUMBER_WIDTH-1:ENTRYNUMBER_START]] <= mFifoData[currFifo][DATA_START+DATA_WIDTH-1:DATA_START];
 					mFifoReady[currFifo] <= 1'b1;
-					currState <= WaitOne;
+					currState <= IDLE;
 				end
 				else 
 				begin
@@ -398,53 +445,49 @@ begin
 					begin
 						if(sFifoReady[0])
                         begin
-                            sFifoData[0] <= mFifoData[currFifo];
-                            sFifoValid[0] <= 1'b1; 
-                            mFifoReady[currFifo] <= 1'b1;
-                            currState <= WaitOne; 
+							destFifo <= 0;
+							prevState <= currState;
+                            currState <= SendPacket; 
                         end		
 					end
 					else if(mFifoData[currFifo][SWITCHNUMBER_START+SWITCHNUMBER_WIDTH-1:SWITCHNUMBER_START]/Y_SIZE < this_x)
 					begin
 						if(sFifoReady[1])
                         begin
-                            sFifoData[1] <= mFifoData[currFifo];
-                            sFifoValid[1] <= 1'b1; 
-                            mFifoReady[currFifo] <= 1'b1;
-                            currState <= WaitOne; 
+                            destFifo <= 1;
+							prevState <= currState;
+                            currState <= SendPacket;  
                         end
 					end
 					else if(mFifoData[currFifo][SWITCHNUMBER_START+SWITCHNUMBER_WIDTH-1:SWITCHNUMBER_START]%Y_SIZE > this_y)
 					begin
 						if(sFifoReady[2])
                         begin
-                            sFifoData[2] <= mFifoData[currFifo];
-                            sFifoValid[2] <= 1'b1; 
-                            mFifoReady[currFifo] <= 1'b1;
-                            currState <= WaitOne; 
+                            destFifo <= 2;
+							prevState <= currState;
+                            currState <= SendPacket; 
                         end
 					end
 					else if(mFifoData[currFifo][SWITCHNUMBER_START+SWITCHNUMBER_WIDTH-1:SWITCHNUMBER_START]%Y_SIZE < this_y)
 					begin
 						if(sFifoReady[3])
                         begin
-                            sFifoData[3] <= mFifoData[currFifo];
-                            sFifoValid[3] <= 1'b1; 
-                            mFifoReady[currFifo] <= 1'b1;
-                            currState <= WaitOne; 
+                            destFifo <= 3;
+							prevState <= currState;
+                            currState <= SendPacket;  
                         end
 					end	
 				end			
 			end
+			
 			RegularSwitch:begin
 				if(mFifoData[currFifo][DEST_START+DEST_WIDTH-1:DEST_START] == this_x*Y_SIZE + this_y)
 				begin
 					if(sFifoReady[4])
 					begin
-					sFifoData[4] <= mFifoData[currFifo];
-                    sFifoValid[4] <= 1'b1; 
-                    mFifoReady[currFifo] <= 1'b1;
-                    currState <= WaitOne;
+						destFifo <= 4;
+						prevState <= currState;
+						currState <= SendPacket; 
 				    end
 				end
 				else 
@@ -453,40 +496,36 @@ begin
 					begin
 						if(sFifoReady[0])
                         begin
-                            sFifoData[0] <= mFifoData[currFifo];
-                            sFifoValid[0] <= 1'b1; 
-                            mFifoReady[currFifo] <= 1'b1;
-                            currState <= WaitOne; 
+                            destFifo <= 0;
+							prevState <= currState;
+							currState <= SendPacket; 
                         end
 					end
 					else if(mFifoData[currFifo][DEST_START+DEST_WIDTH-1:DEST_START]/Y_SIZE < this_x)
 					begin
 						if(sFifoReady[1])
                         begin
-                            sFifoData[1] <= mFifoData[currFifo];
-                            sFifoValid[1] <= 1'b1; 
-                            mFifoReady[currFifo] <= 1'b1;
-                            currState <= WaitOne; 
+                            destFifo <= 1;
+							prevState <= currState;
+							currState <= SendPacket; 
                         end
 					end
 					else if(mFifoData[currFifo][DEST_START+DEST_WIDTH-1:DEST_START]%Y_SIZE > this_y)
 					begin
 						if(sFifoReady[2])
                         begin
-                            sFifoData[2] <= mFifoData[currFifo];
-                            sFifoValid[2] <= 1'b1; 
-                            mFifoReady[currFifo] <= 1'b1;
-                            currState <= WaitOne; 
+                            destFifo <= 2;
+							prevState <= currState;
+							currState <= SendPacket;  
                         end
 					end
 					else if(mFifoData[currFifo][DEST_START+DEST_WIDTH-1:DEST_START]%Y_SIZE < this_y)
 					begin
 						if(sFifoReady[3])
                         begin
-                            sFifoData[3] <= mFifoData[currFifo];
-                            sFifoValid[3] <= 1'b1; 
-                            mFifoReady[currFifo] <= 1'b1;
-                            currState <= WaitOne; 
+                            destFifo <= 3;
+							prevState <= currState;
+							currState <= SendPacket; 
                         end
 					end	
 				end			
@@ -495,215 +534,156 @@ begin
 				if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][0] == 1'b1)
 				begin
 					currState <= CheckNorth;
-					sFifoData[0] <= mFifoData[currFifo];
-                    sFifoValid[0] <= 1'b1;	
 				end
 				else if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][1] == 1'b1)
 				begin
 					currState <= CheckSouth;
-					sFifoData[1] <= mFifoData[currFifo];
-					sFifoValid[1] <= 1'b1;
 				end
 				else if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][2] == 1'b1)
 				begin
 					currState <= CheckEast;
-					sFifoData[2] <= mFifoData[currFifo];
-					sFifoValid[2] <= 1'b1;
 				end
 				else if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][3] == 1'b1)
 				begin
 					currState <= CheckWest;
-					sFifoData[3] <= mFifoData[currFifo];
-					sFifoValid[3] <= 1'b1;
 				end
 				else if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][4] == 1'b1)
 				begin
 					currState <= CheckPE;
-					sFifoData[4] <= mFifoData[currFifo];
-					sFifoValid[4] <= 1'b1;
 				end
 				else
 				begin
-					currState <= WaitOne;	
+					currState <= IDLE;	
 					mFifoReady[currFifo] <= 1'b1;
 				end
 			end
-			CheckNorth: begin				                  
+			CheckNorth: begin		
+				prevState <= currState;
 				if(!sFifoReady[0])
 				begin
 					currState <= WaitReady;
-					prevState <= currState;
 				end
 				else
 				begin
-				    sFifoValid[0] <= 1'b0;
-					//mFifoValid[currFifo] <= 1'b0;
 					if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][1] == 1'b1)
 					begin
 						currState <= CheckSouth;
-						sFifoData[1] <= mFifoData[currFifo];
-						sFifoValid[1] <= 1'b1;
 					end
 					else if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][2] == 1'b1)
 					begin
 						currState <= CheckEast;
-						sFifoData[2] <= mFifoData[currFifo];
-						sFifoValid[2] <= 1'b1;
 					end
 					else if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][3] == 1'b1)
 					begin
 						currState <= CheckWest;
-						sFifoData[3] <= mFifoData[currFifo];
-						sFifoValid[3] <= 1'b1;
 					end
 					else if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][4] == 1'b1)
 					begin
 						currState <= CheckPE;
-						sFifoData[4] <= mFifoData[currFifo];
-						sFifoValid[4] <= 1'b1;
 					end
 					else
-					begin
-						currState <= WaitOne;	
-						mFifoReady[currFifo] <= 1'b1;
-					end
+						currState <= SendPacket;	
 				end
 			end
 			CheckSouth:
 			begin
+				prevState <= currState;
 				if(!sFifoReady[1])
 				begin
-					prevState <= currState;
 					currState <= WaitReady;
 				end
 				else 
 				begin
-				    sFifoValid[1] <= 1'b0;
-					//mFifoValid[currFifo] <= 1'b0;
-					if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][2] == 1'b1)
+				    if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][2] == 1'b1)
 					begin
 						currState <= CheckEast;
-						sFifoData[2] <= mFifoData[currFifo];
-						sFifoValid[2] <= 1'b1;
 					end
 					else if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][3] == 1'b1)
 					begin
 						currState <= CheckWest;
-						sFifoData[3] <= mFifoData[currFifo];
-						sFifoValid[3] <= 1'b1;
 					end
 					else if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][4] == 1'b1)
 					begin
 						currState <= CheckPE;
-						sFifoData[4] <= mFifoData[currFifo];
-						sFifoValid[4] <= 1'b1;
 					end
 					else
-					begin
-						currState <= WaitOne;	
-						mFifoReady[currFifo] <= 1'b1;
-					end	
+						currState <= SendPacket;	
 				end
 			end
 			CheckEast:
 			begin
+				prevState <= currState;
 				if(!sFifoReady[2])
 				begin
-					prevState <= currState;
 					currState <= WaitReady;
 				end
 				else 
 				begin
-				    sFifoValid[2] <= 1'b0;
-					//mFifoValid[currFifo] <= 1'b0;
 					if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][3] == 1'b1)
 					begin
 						currState <= CheckWest;
-						sFifoData[3] <= mFifoData[currFifo];
-						sFifoValid[3] <= 1'b1;
 					end
 					else if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][4] == 1'b1)
 					begin
 						currState <= CheckPE;
-						sFifoData[4] <= mFifoData[currFifo];
-						sFifoValid[4] <= 1'b1;
 					end
 					else
-					begin
-						currState <= WaitOne;	
-						mFifoReady[currFifo] <= 1'b1;
-					end
-					
+						currState <= SendPacket;	
 				end
 			end
 			CheckWest:
 			begin
+				prevState <= currState;
 				if(!sFifoReady[3])
 				begin
-					prevState <= currState;
 					currState <= WaitReady;
 				end
 				else 
 				begin
-				    sFifoValid[3] <= 1'b0;
 					if(RT[mFifoData[currFifo][SOURCE_START+SOURCE_WIDTH-1:SOURCE_START]][4] == 1'b1)
 					begin
 						currState <= CheckPE;
-						sFifoData[4] <= mFifoData[currFifo];
-						sFifoValid[4] <= 1'b1;
 					end
 					else
-					begin
-						currState <= WaitOne;	
-						mFifoReady[currFifo] <= 1'b1;
-					end
+						currState <= SendPacket;	
 				end
 			end
 			CheckPE:begin
+				prevState <= currState;
 				if(!sFifoReady[4])
 				begin
-					prevState <= currState;
 					currState <= WaitReady;
 				end
 				else
-				begin
-				    sFifoValid[4] <= 1'b0;
-					currState <= WaitOne;		
-					mFifoReady[currFifo] <= 1'b1;
-				end
+					currState <= SendPacket;		
 			end
 			WaitReady:begin
 				case(prevState)
-					CheckNorth: 
+					CheckNorth:
+					begin
 						if(sFifoReady[0])
-						begin
-						currState <= prevState;
-					    sFifoValid[0] <= 1'b0;
-					    end
+							currState <= prevState;
+					end
 					CheckSouth:
+					begin
 						if(sFifoReady[1])
-						begin
-						currState <= prevState;
-					    sFifoValid[1] <= 1'b0;
-					    end
+							currState <= prevState;
+					end
 					CheckEast:
+					begin	
 						if(sFifoReady[2])
-						begin
-						currState <= prevState;
-					    sFifoValid[2] <= 1'b0;
-					    end
+							currState <= prevState;
+					end
 					CheckWest:
+					begin	
 						if(sFifoReady[3])
-						begin
-						currState <= prevState;
-					    sFifoValid[3] <= 1'b0;
-					    end
+							currState <= prevState;
+					end
 					CheckPE:
+					begin
 						if(sFifoReady[4])
-						begin
-						currState <= prevState;
-					    sFifoValid[4] <= 1'b0;
-					    end
+							currState <= prevState;
+					end
 					default: currState <= IDLE;
 				endcase
             end
