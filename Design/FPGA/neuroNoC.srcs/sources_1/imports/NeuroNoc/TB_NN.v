@@ -299,7 +299,7 @@ begin: block
 			sendpacket(CONF_INB, counter, i, 95, d(-1.2, BIAS_WIDTH, BFRACTION, BINT));	
 		end
 	end
-	for(j = 13; j < 15; j = j + 1)
+	for(j = 13; j < 16; j = j + 1)
 	begin
 		for(i = j*16; i < j*16+16; i = i + 1)
 		begin
