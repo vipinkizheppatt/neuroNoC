@@ -40,29 +40,9 @@ Subsequently they are used with testing data for applications such as classifica
 
 \subsection{Previous Works}
 
-The hardware options utilized for machine learning are Central Processing Units (CPU), Graphic
-Processing Units (GPU), FPGA and Application-Specific Integrated Circuit (ASIC). 
-Each of these options has their own advantages over others. CPUs are extremely flexible in terms of programmability, but they have issues regarding parallelism, cost and heat. 
-GPUs have become most widely used hardware option for executing machine learning and deep learning tasks [tpu2]. They are designed to provide high level of parallelism, and thus well suits for the demand of machine and deep learning, where a lot of
-matrix multiplications and convolutions are involved.
-However, GPUs need to be incorporated with other
-chips (e.g. CPU, FPGA) that can rapidly execute NN on it (i.e. inference), since they are more suitable for
-training rather than inference. 
-FPGAs have recently become popular for machine learning, and companies such as Microsoft and Baidu have invested in FPGAs heavily. 
-FPGAs have much less power usage compared to CPUs, and their flexibility offers low latency and high bandwidth. Almost all implementations of ANN on FPGAs use various methods to utilize the reconfigurability of FPGA
-hardware. 
-According to recent studies, FPGAs have outperformed GPUs in many applications, and it is predicated that they will soon be a better option than GPUs in deep learning [tpu2]. Even though ASICs are the least flexible among other above-mentioned hardware options, they compensate this drawback by offering highest efficiency. ASIC can be designed for both training or inference processes.
-There are many examples of ASIC that are designed to meet requirements of machine learning and ANN.
-Google’s Tensor Processing Unit (TPU) and IBM’s TrueNorth are the best examples of successful ASIC
-deployments for NN purposes. Being originally focused on 8-bit integers for inference tasks, TPUs now
-provides floating point precision and can be deployed in training as well [tpu2]. High performance and
-power efficiency of TPUs are achieved due to lack of extraneous logic[tpu2]. Hence, unlike other
-abovementioned hardware options, TPUs cannot be reprogrammed. IBM’s TrueNorth is a digital chip that
-consists of one million spiking-neurons incorporated with 256 million synapses. TrueNorth provides high
-efficiency due to spiking-neuron technology, and high scalability as several chips can be tiled in two-
-dimensions, as well as flexibility by offering independent configurability of individual neurons and
-synapses (noc2). TrueNorth is fabricated using CMOS technology and uses offline learning in NN
-purposes (noc2).
+The hardware options utilized for machine learning are Central Processing Units (CPU), Graphic Processing Units (GPU), FPGA and Application-Specific Integrated Circuit (ASIC). Each of these options has their own advantages over others. CPUs are extremely flexible in terms of programmability, but they have issues regarding parallelism, cost and heat. GPUs have become most widely used hardware option for executing machine learning and deep learning tasks \cite{pooja2018}. They are designed to provide high level of parallelism, and thus well suits for the demand of machine and deep learning, where a lot of matrix multiplications and convolutions are involved. However, GPUs need to be incorporated with other chips (e.g. CPU, FPGA) that can rapidly execute NN on it (i.e. inference), since they are more suitable for training rather than inference. FPGAs have recently become popular for machine learning, and companies such as Microsoft and Baidu have invested in FPGAs heavily. FPGAs have much less power usage compared to CPUs, and their flexibility offers low latency and high bandwidth. Almost all implementations of ANN on FPGAs use various methods to utilize the reconfigurability of FPGA hardware. According to recent studies, FPGAs have outperformed GPUs in many applications, and it is predicated that they will soon be a better option than GPUs in deep learning \cite{pooja2018}. Even though ASICs are the least flexible among other above-mentioned hardware options, they compensate this drawback by offering highest efficiency. ASIC can be designed for both training or inference processes. 
+
+There are many examples of ASIC that are designed to meet requirements of machine learning and ANN. Google’s Tensor Processing Unit (TPU) and IBM’s TrueNorth are the best examples of successful ASIC deployments for NN purposes. Being originally focused on 8-bit integers for inference tasks, TPUs now provides floating point precision and can be deployed in training as well \cite{pooja2018}. High performance and power efficiency of TPUs are achieved due to lack of extraneous logic \cite{pooja2018}. Hence, unlike other abovementioned hardware options, TPUs cannot be reprogrammed. IBM’s TrueNorth is a digital chip that consists of one million spiking-neurons incorporated with 256 million synapses. TrueNorth provides high efficiency due to spiking-neuron technology, and high scalability as several chips can be tiled in two-dimensions, as well as flexibility by offering independent configurability of individual neurons and synapses \cite{Merolla668}. TrueNorth is fabricated using CMOS technology and uses offline learning in NN purposes \cite{Merolla668}.
    
 
 \subsection{Number Representation}

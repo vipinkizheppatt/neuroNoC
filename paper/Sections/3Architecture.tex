@@ -1,12 +1,19 @@
 \section{Proposed Architecture}
 
-The overall architecture of NeuroNoC is depicted in Fig.~\ref{figure:neuronoc}.
+\begin{figure}
+    \centering
+    \includegraphics[width =0.8\columnwidth]{Figures/NeuroNoC.pdf}
+    \caption{Architecture of the proposed artificial neuron}
+    \label{fig:neuronoc}
+\end{figure}
+
+The overall architecture of NeuroNoC is depicted in Fig.~\ref{fig:neuronoc}.
 The NoC is arranged in mech topology with each PE representing a neuron, except the one at the bottom-left corner.
-Mesh topology was selected based on its relatively higher bisection bandwidth as well as its suitability in implementing multicast systems. 
-The size of the NoC is configurable and can be set by users based on the type of the application and the resource capacity of the target FPGA.
+Mesh topology was selected based on its higher bisection bandwidth and suitability in implementing multicast systems. 
+The size of the NoC is configurable through an HDL parameter and can be set by users based on the type of the application and the resource capacity of the target FPGA device.
 The bottom-left PE (with zero X and Y coordinates) is used to inject data to the network from external world.
 In other words this PE represents the entire input layer of the NN.
-The output layer of the NN sends back the network output to this PE for sending it back to the host machine.
+The output layer of the NN sends back the network output to this PE for transmitting it back to the host machine.
 Due to the packet-switched nature of NoC architecture, the packets may reach the output PE in out-of-order.
 Packets are reordered and sent back to the host computer based on the sequence number embedded in the data packets.
 
@@ -15,9 +22,9 @@ Packets are reordered and sent back to the host computer based on the sequence n
 NeuroNoC implements a variety of packet formats for supporting network and neuron configurations as well as for inter-neuron communication.  
 Fig.~\ref{figure:pktformat} depicts the different packet types and their corresponding fields.
 For a given NeuroNoC implementation, all packet types have same size but depending on the size of the NoC, packet size varies.
-This is mainly due to the variation in the size of the address fields which are NoC size dependent. 
+This is attributed to the variation in the size of the address fields which are NoC size dependent. 
 \begin{figure}[t!]
-	\begin{center}
+    \begin{center}
     \includegraphics[width=0.8\columnwidth]{Figures/pktformat.pdf}
     \caption{NeuroNoC packet formats for supporting neuron and network configurations and data communication} 
     \label{figure:pktformat}
@@ -26,71 +33,97 @@ This is mainly due to the variation in the size of the address fields which are 
 
 \subsubsection*{\bf Data Packet}
 Data packets are used for inter-neuron communication.
-Once a neuron receives data packets from all its predecessors, it calculates the output based on inputs, weight values, bias and the activation function.
+Once a neuron receives data packets from all its predecessors, it calculates the output based on inputs values, weights, bias and the activation function.
 It sends out another data packet with the calculated output in the \emph{Data} field and the neuron address in the \emph{source} field.
 The index field has significance only when the packet source is zero (bottom-left PE).
 Since the entire input layer is modeled by this single PE, the index number differentiates the different neurons of this layer.
+Otherwise it will be impossible to determine the weight values corresponding each input neuron in the first hidden layer.
 \subsubsection*{\bf Input number and Bias Configuration Packet}
-This configuration packet is used for setting two parameters of each neuron.
+This configuration packet is used for setting two parameters in each neuron.
 The \emph{Input Number} field configures the number of predecessors from the previous layer.
 The \emph{Bias} field sets the neuron bias for calculating its output.
+Each neuron stores these two parameters in appropriate registers during network configuration.
 The \emph{Destination} field is used by the NoC to route the packet to appropriate neurons. 
 \subsubsection*{\bf Weight Configuration Packet}
-The Weight Configuration Packet sets the input weights for each neuron by storing the \emph{Weight} field in its internal Weight Table.
+The weight configuration packet sets the input weights for each neuron by storing the \emph{Weight} field in its internal Weight Table.
 The \emph{Source} field enables mapping a a particular weight with a particular input.
 Infact the Source field is used as the write address when storing weight in the weight table.
 \subsubsection*{\bf Routing Table Configuration Packet}
 These packets are used for configuring the NoC switch routing tables, enabling multicast routing algorithm described in subsection~\ref{subsec_routing}.
 
-\subsection{Artificial Neuron}
-Individual neurons of the NN are implementing by the processing elements (PEs) of the NoC.
-Each neuron receives inputs from neurons in the previous layer, multiplies them with corresponding weights, sums up and generates the output based on an activation function.
-During configuration stage, each neuron is configured with the number of input neurons, weights corresponding each input and bias.
-Fig.~\ref{fig:neuron} shows the different submodules of an artificial neuron and are described in the subsequest sections.
-\subsubsection{\bf Sequence Number Checker(SNC)}
- 
-Since packet switched NoC does not preserve packet delivery ordering, neurons support out-of-order packet delivery by storing and reassembling the incoming data packets. 
-The input layer (bottom-left PE) assigns each data packet a sequence number in the \emph{sequence number} field. 
-It is to be noted that the number assigned corresponds to an input number rather than to a single packet.
-In other words, an input with \emph{n-feature vector space} will be sent as n packets with the same sequence number. 
-After processing the input data, the output packet from a neuron retains the same sequence number as that of the input packets. 
 
 \begin{figure}
     \centering
-    \includegraphics[width =0.8\columnwidth]{Figures/NeuroNoC.pdf}
-    \caption{Architecture of the proposed artificial neuron}
+    \includegraphics[width =0.8\columnwidth]{Figures/neuron.pdf}
+    \caption{Architecture of an artificial neuron}
     \label{fig:neuron}
 \end{figure}
 
-The data packets arriving from the network interface are initially stored in a hash table~(HT). 
-The table consists of $2^{SEQ\_WIDTH}$ blocks, where $SEQ\_WIDTH$ amounts to the number of bits in the seqNum field. 
+\subsection{Network Initialization}
+The following steps have to be performed by an external host machine before sending training or test data to the network.
+\begin{itemize}
+\item Initialize the routing tables of the NoC by sending \emph{forwarding table configuration} packets
+\item Initialize each neuron with its number of predecessors and the bias value through \emph{input number and bias configuration} packets
+\item Configure the weight tables of the neurons with either pre-trained weight values or random initialization values through the \emph{weight configuration} packets.
+\end{itemize}
+Presently NeuroNoC does not support on-chip training of the network.
+This is mainly because the training algorithms such as gradient descent is not hardware friendly and even the approximate implementation consumes too much of hardware resources leaving very little for the actual network~\cite{}.
+Hence either the network has to be pre-trained in a software environment to determine the weight values or a hardware-software co-design approach has to be adopted.
+In the hardware-software approach, the weight tables are initialized with random weights and training samples are injected to the network by the host machine.
+The network sends back the output to the host and it runs the back-propagation algorithm to determine the new weight values and updates it through configuration packets.
+The same procedure is followed in determining the bias values also.
+\subsection{Artificial Neuron}
+Artificial neurons in the NN are implementing by the processing elements~(PEs) of the NoC.
+In the present implementation, we support traditional artificial neurons with linear, sigmoid, binary step and hyperbolic activation functions.
+In the future versions, more advanced neurons such as LSTM, spiking cells and recurrent cells will be supported.
+The main advantage of the the proposed architecture is that, the NoC portion of the network can remain intact for inter-neuron communication and the processing portion of the network can be modified based on requirements.
+Each neuron receives inputs from neurons in the previous layer, multiplies them with corresponding weights, sums up and generates the output based on an activation function.
+During configuration stage, each neuron is configured with the numbers, weights corresponding each input and bias.
+Fig.~\ref{fig:neuron} shows the different submodules of an artificial neuron and are described in the subsequest sections.
+\subsubsection{\bf Sequence Number Checker (SNC)}
+ 
+Since packet switched NoCs do not preserve packet delivery order, neurons support out-of-order packet delivery by storing and reassembling the incoming data packets. 
+The input layer (bottom-left PE) assigns each data packet a sequence number in the \emph{sequence number} field. 
+It is to be noted that the number assigned corresponds to an input number rather than to a single packet.
+In other words, an input with \emph{n-feature vector space} will be sent as n packets with the same sequence number. 
+For example when the NN is used for detecting hand written characters, the input to the network are grayscale images.
+Here each input is a grayscale image, which is composed of 784 pixels.
+Thus each input to the network is a 784-feature vector, where each feature is an intensity value of a pixel.
+A single input will be injected to the network as 784 packets with the same sequence number.
+It should be also noted that for this network the number of neurons in the input layer are 784, but in the NoC implementation they are represented as 784 packets with same sequence number.
+To distinguish each input neuron, the packets also carry a sequence number field as discussed in the previous section.
+In the absence of this field, the first hidden layer will not be able to determine the corresponding weight values for each input neuron.
+The index has no significance except for the first hidden layer since every neuron is represented by a physical PE except for the input layer.
+After processing the input data, the output packet from a neuron retains the same sequence number as that of the input packets. 
+
+The neuron initially stores the received data packets in a hash table~(HT). 
+The table consists of $2^{SEQ\_WIDTH}$ blocks, where $SEQ\_WIDTH$ is the number of bits in the seqNum field. 
 For a given NoC of size $S_{NOC}$, in the worst case each neuron may receive inputs from $S_{NOC}$ neighboring neurons. 
 Thus, every block in HT is further divided to $S_{NOC}$ memory units. 
 The data packets are mapped to HT memory through the following hash function,
 
+
 \begin{equation}
-hf(seqNum,count[seqNum]) = concat(seqNum,count[seqNum])
+\resizebox{.9\hsize}{!}{\emph{hf(seqNum,count[seqNum]) = concat(seqNum,count[seqNum])}}
 \label{equation:hf}
 \end{equation}
 
 Where \emph{count[seqNum]} is the number of packets with the same sequence number already received by the neuron.
-The sequence number count is traked by the counter array (CR), which has a dedicated counter for each sequence number. 
+The sequence number count is tracked by the counter array (CR), which has a dedicated counter for each sequence number. 
 After a packet is stored in the HT, the corresponding sequence number counter is incremented, so that the next packets with the same sequence number is stored in the next memory location. 
-The SNC State Machine (SSM) keeps track of the current sequence number and the corresponding counter to retrieve packets from the HT once the neuron receives packets from all its neighbors. 
+The SNC State Machine (SSM) keeps track of the current sequence number and the corresponding counter to retrieve packets from the HT once the neuron receives packets from all its predecessors. 
 
 \subsubsection{\bf Multipy-Accumulate Unit (MAC)}
-The computation of the total synaptic input to the neuron is implemented by successive multiplication and addition operations (MAC operations).
-Once the SNC module detects that the neuron has received input packets from all its neighbors, it sends a control signal to the MAC module.
-The MAC module then reads the input one-by-one from the hash table~(HT) and multiplies and accumulates using the corresponding weight values read from the weight table~(WT). 
-Weights are stored in WT through the configuration packet described in Section~\ref{subsecpktformat}. 
+The total synaptic input to the neuron is implemented by successive multiplication and addition operations (MAC operations).
+Once the SNC module detects that the neuron has received input packets from all its predecessors, it sends a control signal to the MAC module.
+The MAC module then reads the inputs one-by-one from the hash table~(HT) and multiplies and accumulates using the corresponding weight values read from the weight table~(WT). 
+Weights are stored in WT through the configuration packets described in Section~\ref{subsecpktformat}. 
 Assuming the same format for neuron input and output data, the number of bits to represent weighted sum is
 
 \begin{equation}
 N_{s}=\lceil\log_{2}(S_{NOC}\cdot (2^{n_{w}-1})(2^{n_{z}-1})+2^{n_{b}-1}\cdot 2^{f_{z}+f_{w}+f_{b}})\rceil+1
 \label{equation:Ns}
 \end{equation}
-
-The number of inputs and bias are configured with the same control packets which were used during SNC.  
 
 \subsubsection{\bf Activation Function (AF)}
 The ANN implementation supports a variety of activation functions with the help of look-up-tables~(LUTs).
@@ -116,6 +149,11 @@ and the number of bits to address the LUT is
 $n_{LUT}=\lceil\log_{2}{(x_{high}-x_{low}+1)}\rceil$.
 If the computed weighted sum falls within this interval, the output is taken from the LUT otherwise the output is assigned 1 or 0 based on whether the value is above $x_{high}$ or below $x_{low}$. 
 
+The output from the MAC module is used as the address for the activation function LUT.
+The output from the LUT is then concatenated with the address of the PE as well as the sequence number received from the input packets to generate the neuron output packet.
+This packet is then injected to the NoC for broadcasting to the successor neurons.
+Since the NoC switches support multi-cast routing, each PE has to inject a single packet irrespective of the number of destinations.
+This helps in reducing the latency and improves the overall throughput of the neurons. 
 \subsection{Switch}
 The detailed architecture of the NeuroNoC switch is depicted in Fig.~\ref{fig_switch}. 
 Each switch is capable of sending and receiving packets from five direction; North, South, East, West and the associated neuron. 
