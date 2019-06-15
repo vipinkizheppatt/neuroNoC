@@ -7,15 +7,12 @@ integer widthLayer=10;
 integer heightFirst =3;
 integer heightSecond =4;
 integer heightThird =5;
-integer klimit=0;
-integer jlimit=0;
-integer ilimit=0;
 
-integer file1;
-integer file2;
-real dataWeight [0:3][0:30][0:784];
-real dataBias [0:3][0:30];
-
+reg [9:0] dataWeight1 [0:783];
+reg [9:0] dataWeight2 [0:29];
+reg [9:0] dataWeight3 [0:9];
+reg [9:0] dataBias [0:0];
+reg [9:0] testData [0:783];
 reg clk, rst, input_valid, input_ready;
 reg [PACKET_SIZE-1:0] input_packet;
 wire [PACKET_SIZE-1:0] output_packet;
@@ -105,14 +102,11 @@ begin: block
 	for(i = 0; i < widthLayer-1; i = i + 1) 
 	begin
 		sendpacketFT(CONF_FT, i , 0, 0, 5'b00101);
-		for(u = 80; u < 90; u = u + 1)
-		begin 
-			sendpacketFT(CONF_FT, i, u, 0, 5'b01000);	
-		end
+		
 	end
 	sendpacketFT(CONF_FT, widthLayer-1, 0, 0, 5'b00001);
 	
-	//next 6 rows
+	//next 3 rows
 	for(j = 1; j < heightFirst; j = j + 1)
 	begin
 		for(i = 16*j; i < j*16+widthLayer; i = i + 1) 
@@ -281,64 +275,21 @@ begin: block
 	
 	for(i = 0; i < widthLayer; i = i + 1) 
 	begin
-		for(j = 13; j < widthLayer; j = j + 1)
+		for(k = 80; k < 90; k = k+1)
 		begin
-			for(k = j*16; k < j*16 + widthLayer; k = k+1)
-			begin
-				if(i == 0)
-					sendpacketFT(CONF_FT, i, k,  0, 5'b10000);
-				else 
-					sendpacketFT(CONF_FT, i, k,  0, 5'b01000);
-				
-			end
-		end	
+			if(i == 0)
+				sendpacketFT(CONF_FT, i, k,  0, 5'b10000);
+			else 
+				sendpacketFT(CONF_FT, i, k,  0, 5'b01000);
+			
+		end
 	end
 	
     //END
 			
     	//CONFIGURE INPUT NUMBER and BIAS
 		
-	//read weights
-	file1=$fopen("weight.txt","r");
-	k = 0;
-	i = 0;
-	j = 0;
-	klimit = 784;
-	jlimit = 30;
-	while (!$feof(file1)) begin 
-		$fscanf(file1,"%d",dataWeight[i][j][k]); //write as decimal
-		k = k+1;
-		if(k == klimit) begin
-			j = j+1;
-			k = 0;
-		end
-		if(j == jlimit) begin
-			if(i == 3) break;
-			i = i+1;
-			j = 0;
-			if(i == 1) begin
-				klimit = 30;
-				jlimit = 10;
-			end
-			if(i == 2) klimit = 10;
-		end
-    end 
 	
-	//read bias
-	file1=$fopen("bias.txt","r");
-	i = 0;
-	j = 0;
-	jlimit = 30;
-	while (!$feof(file2)) begin 
-		$fscanf(file2,"%d",dataBias[i][j]); //write as decimal
-		j=j+1;
-		if(j == jlimit) begin
-			if(i==3) break;
-			i=i+1;
-			jlimit = 10;
-			j=0;
-		end
-    end 
 	
 	
     counter=0;
@@ -348,7 +299,11 @@ begin: block
 	begin
 		for(i = j*16; i < j*16+widthLayer; i = i + 1)
 		begin
-			sendpacket(CONF_INB, counter, i, 784, d(dataBias[0][k], BIAS_WIDTH, BFRACTION, BINT));	
+			if(k<10) $readmemb({"C:\\Users\\Baisyn\\research\\neuroNoCScripts\\neuroNoCScripts\\b_1_", k+"0",".mif"},dataBias);
+			else $readmemb({"C:\\Users\\Baisyn\\research\\neuroNoCScripts\\neuroNoCScripts\\b_1_", (k/10)+"0",(k%10)+"0",".mif"},dataBias);
+			sendpacket(CONF_INB, counter, i, 783, dataBias[0]);	
+			$display("%b", dataBias[0])
+
 			k=k+1;
 		end
 	end
@@ -357,7 +312,8 @@ begin: block
 	begin
 		for(i = j*16; i < j*16+widthLayer; i = i + 1)
 		begin
-			sendpacket(CONF_INB, counter, i, 30, d(dataBias[1][k], BIAS_WIDTH, BFRACTION, BINT));	
+			$readmemb({"C:\\Users\\Baisyn\\research\\neuroNoCScripts\\neuroNoCScripts\\b_2_", k+"0",".mif"},dataBias);
+			sendpacket(CONF_INB, counter, i, 29, dataBias[0]);	
 			k=k+1;
 		end
 	end
@@ -366,7 +322,8 @@ begin: block
 	begin
 		for(i = j*16; i < j*16+widthLayer; i = i + 1)
 		begin
-			sendpacket(CONF_INB, counter, i, 10, d(dataBias[2][k], BIAS_WIDTH, BFRACTION, BINT));	
+			$readmemb({"C:\\Users\\Baisyn\\research\\neuroNoCScripts\\neuroNoCScripts\\b_3_", k+"0",".mif"},dataBias);
+			sendpacket(CONF_INB, counter, i, 9, dataBias[0]);	
 			k=k+1;
 		end
 	end
@@ -384,27 +341,46 @@ begin: block
 	begin
 		for(i = 16*u; i < u*16+widthLayer; i = i + 1)
 		begin
+			if(k<10) $readmemb({"C:\\Users\\Baisyn\\research\\neuroNoCScripts\\neuroNoCScripts\\w_1_", k+"0", ".mif"}, dataWeight1);
+			else $readmemb({"C:\\Users\\Baisyn\\research\\neuroNoCScripts\\neuroNoCScripts\\w_1_", (k/10)+"0",(k%10)+"0", ".mif"}, dataWeight1);
 			for(j = 0; j < 784; j=j+1) 
 			begin
-				sendpacket(CONF_W, counter, i, j, d(dataWeight[0][k][j],WEIGHT_WIDTH, WFRACTION, WINT));
+				sendpacket(CONF_W, counter, i, j, dataWeight1[j]);
 			end
-			//weight first and second layers
-			for(j = 64; j < 74; j=j+1) 
-			begin
-				sendpacket(CONF_W, counter, j, i, d(dataWeight[1][j-64][k],WEIGHT_WIDTH, WFRACTION, WINT));
-			end
+			
 			k = k + 1;
 		end
 	end
-	
+	//weight first and second layer
+	k = 0;
+	for(i = 64; i < 74; i = i + 1)
+	begin
+		$readmemb({"C:\\Users\\Baisyn\\research\\neuroNoCScripts\\neuroNoCScripts\\w_2_", k+"0", ".mif"}, dataWeight2);
+		for(j = 16; j < 16+widthLayer; j=j+1) 
+		begin
+			sendpacket(CONF_W, counter, i, j, dataWeight2[j-16]);
+		end
+		for(j = 32; j < 32+widthLayer; j=j+1) 
+		begin
+			sendpacket(CONF_W, counter, i, j, dataWeight2[j-32]);
+		end
+		for(j = 48; j < 48+widthLayer; j=j+1) 
+		begin
+			sendpacket(CONF_W, counter, i, j, dataWeight2[j-48]);
+		end
+		k = k+1;
+	end
 	
 	//weight second and output layers
+	k = 0;
 	for(i = 80; i < 80+widthLayer; i = i + 1)
 	begin
+		$readmemb({"C:\\Users\\Baisyn\\research\\neuroNoCScripts\\neuroNoCScripts\\w_3_", k+"0", ".mif"}, dataWeight3);
 		for(j = 64; j < 64+widthLayer; j=j+1) 
 		begin
-			sendpacket(CONF_W, counter, i, j, d(dataWeight[2][i-80][j-64],WEIGHT_WIDTH, WFRACTION, WINT));
+			sendpacket(CONF_W, counter, i, j, dataWeight3[j-64]);
 		end
+		k = k + 1;
 	end
 	
 	//end
@@ -414,11 +390,10 @@ begin: block
 	input_ready<=1;
 	repeat(1)
 	begin
-	   counter=counter+1;
-		for(k = 0; k < 48; k=k+1)
-            sendpacket(DATA, counter, k, 0, d(1.5, INPUT_WIDTH, IFRACTION, IINT));
-            
-        
+		counter=counter+1;
+		$readmemb({"C:\\Users\\Baisyn\\research\\neuroNoCScripts\\neuroNoCScripts\\validation_data.txt"}, testData);
+		for(k = 0; k < 784; k=k+1)
+            sendpacket(DATA, counter, k, 0, testData[k]);
 	end
 
 	//END
