@@ -1,5 +1,5 @@
-localparam X_SIZE = 16;
-localparam Y_SIZE = 16;
+localparam X_SIZE = 32;
+localparam Y_SIZE = 32;
 //packet format
 localparam NETWORK_SIZE=X_SIZE*Y_SIZE;
 

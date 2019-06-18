@@ -9,7 +9,7 @@ o_e_valid,i_e_ready,o_e_data,
 i_w_valid,o_w_ready,i_w_data,
 o_w_valid,i_w_ready,o_w_data,
 i_pe_valid,o_pe_ready,i_pe_data,
-o_pe_valid,i_pe_ready,o_pe_data
+o_pe_valid,i_pe_ready,o_pe_data,
 );
 
 `include "header.vh"
